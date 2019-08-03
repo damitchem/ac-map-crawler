@@ -21,7 +21,11 @@ func main() {
 	format := "https://asheron.fandom.com/wiki/File:%v"
 	scanner := bufio.NewScanner(file)
 	lineNo := 1
+	if _, err := os.Stat("maps"); os.IsNotExist(err) {
+		os.Mkdir("maps", 644)
+	}
 	for scanner.Scan() {
+		fmt.Printf("Starting line %v\r\n", lineNo)
 		line := scanner.Text()
 		pieces := strings.Split(line, ";")
 		if len(pieces) == 0 {
@@ -67,7 +71,11 @@ func handleDownload(file, url string) error {
 
 		defer res.Body.Close()
 		b, _ := ioutil.ReadAll(res.Body)
-		ioutil.WriteFile(fmt.Sprintf("maps/%v", file), b, 644)
+		fmt.Printf("Writing out file %v\r\n", file)
+		err = ioutil.WriteFile(fmt.Sprintf("maps/%v", file), b, 644)
+		if err != nil {
+			fmt.Println(err)
+		}
 	})
 
 	return nil

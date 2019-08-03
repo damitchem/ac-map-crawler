@@ -25,8 +25,8 @@ func main() {
 		os.Mkdir("maps", 644)
 	}
 	for scanner.Scan() {
-		fmt.Printf("Starting line %v\r\n", lineNo)
 		line := scanner.Text()
+		fmt.Println("Starting map", line)
 		pieces := strings.Split(line, ";")
 		if len(pieces) == 0 {
 			panic(fmt.Sprint("invalid structure on line", lineNo))

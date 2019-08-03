@@ -1,0 +1,74 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/PuerkitoBio/goquery"
+
+	"github.com/pkg/errors"
+)
+
+func main() {
+
+	file, _ := os.Open("dungeons.txt")
+
+	defer file.Close()
+	format := "https://asheron.fandom.com/wiki/File:%v"
+	scanner := bufio.NewScanner(file)
+	lineNo := 1
+	for scanner.Scan() {
+		line := scanner.Text()
+		pieces := strings.Split(line, ";")
+		if len(pieces) == 0 {
+			panic(fmt.Sprint("invalid structure on line", lineNo))
+		}
+		file := fmt.Sprintf("%v.gif", pieces[0])
+		url := fmt.Sprintf(format, file)
+		err := handleDownload(file, url)
+		if err != nil {
+			fmt.Println("Failed to download", err)
+		}
+
+		lineNo++
+	}
+
+}
+
+func handleDownload(file, url string) error {
+	req, _ := http.NewRequest("GET", url, nil)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "error doing request")
+	}
+	defer res.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		return errors.Wrap(err, "error creating document from response")
+	}
+
+	doc.Find("a.internal").Each(func(i int, s *goquery.Selection) {
+		href, exists := s.Attr("href")
+		if !exists {
+			return
+		}
+		req, _ := http.NewRequest("GET", href, nil)
+		res, err := http.DefaultClient.Do(req)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		defer res.Body.Close()
+		b, _ := ioutil.ReadAll(res.Body)
+		ioutil.WriteFile(fmt.Sprintf("maps/%v", file), b, 644)
+	})
+
+	return nil
+}
